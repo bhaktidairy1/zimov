@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iruna Core Command</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-anim"></div>
+    <div class="container">
+        
+        <!-- Login Interface -->
+        <main id="login-screen" class="glass-panel active">
+            <div class="login-header">
+                <div class="glow-orb"></div>
+                <h1>IRUNA <span class="accent">CORE</span></h1>
+                <p>Establishing remote neural link...</p>
+            </div>
+            
+            <div class="input-group">
+                <label>Authentication Mage URL</label>
+                <input type="text" id="mageurl-input" value="https://gae4php82-real.an.r.appspot.com/_ah/login?continue=https://gae4php82-real.an.r.appspot.com/authcreate&auth=g.a0008AjsE7nmtOE_FRrLzq3c0eCenIrHPLtvizyyNSyUpEC01rs3xOPaAL3b6yqU6aCo6AzWVQACgYKAesSARESFQHGX2MivSa5uCui6fUjbNajHhfgERoVAUF8yKoQVfPkaFGTvdLOGFA-XYpY0076">
+            </div>
+            
+            <button id="connect-btn" class="sys-btn primary">INITIALIZE CONNECTION</button>
+            <div id="login-status" class="status-msg"></div>
+        </main>
+
+        <!-- Dashboard Interface -->
+        <main id="dashboard-screen" class="glass-panel hidden">
+            <header class="dash-head">
+                <h2>IRUNA <span class="accent">DASHBOARD</span></h2>
+                <div class="conn-status"><span class="pulse"></span> Connected</div>
+            </header>
+
+            <div class="grid-layout">
+                <!-- Controls -->
+                <section class="panel controls">
+                    <h3>Combat Matrix</h3>
+                    <div class="btn-group">
+                        <button class="mode-btn sys-btn" data-mode="STANDBY">STANDBY</button>
+                        <button class="mode-btn sys-btn" data-mode="AUTO">AUTO-COLON</button>
+                        <button class="mode-btn sys-btn" data-mode="MANUAL">MANUAL</button>
+                    </div>
+
+                    <div class="separator"></div>
+
+                    <h3>Movement Overrides</h3>
+                    <button id="pause-btn" class="sys-btn warn">PAUSE NAV</button>
+
+                    <div class="separator"></div>
+
+                    <h3>Packet Injection</h3>
+                    <div class="hex-flex">
+                        <input type="text" id="hex-input" placeholder="e.g. 0002143F" class="code-font">
+                        <button id="inject-btn" class="sys-btn accent-b">FIRE</button>
+                    </div>
+                </section>
+
+                <!-- Radar -->
+                <section class="panel radar">
+                    <h3>Radar Array</h3>
+                    <div id="radar-list" class="list-view">
+                        <div class="radar-empty">Awaiting biological targets...</div>
+                    </div>
+                </section>
+
+                <!-- Terminal logs -->
+                <section class="panel terminal-panel">
+                    <h3>Data Stream</h3>
+                    <div id="terminal" class="code-font">
+                    </div>
+                </section>
+            </div>
+        </main>
+
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
