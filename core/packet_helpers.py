@@ -64,7 +64,10 @@ def hex_recv(sock, expect_len=4096, label=None) -> bytes:
         msg = f"← {label} ({len(data)} bytes): {h}"
     else:
         msg = f"← Received ({len(data)} bytes): {h}"
-    print(msg)
+        
+    import sys
+    if "--minimal" not in sys.argv:
+        print(msg)
     write_log(msg)
     return data
 
@@ -77,5 +80,8 @@ def hex_send(sock, hexstr: str, label=None):
         msg = f"→ {label}: {hexstr}"
     else:
         msg = f"→ Sent: {hexstr}"
-    print(msg)
+        
+    import sys
+    if "--minimal" not in sys.argv:
+        print(msg)
     write_log(msg)
