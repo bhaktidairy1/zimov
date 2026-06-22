@@ -1,10 +1,17 @@
 import sys
+import argparse
 import threading
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 from core.client import client
 from core.game_state import state
+from core.map_teleport import teleport, teleport_preset, KNOWN_MAPS, find_map_by_name
+
+# Parse arguments
+parser = argparse.ArgumentParser(description="Iruna Server")
+parser.add_argument("--minimal", action="store_true", help="Run the server with the minimal web UI")
+args = parser.parse_args()
 
 app = Flask(__name__, static_folder="web")
 CORS(app)
@@ -34,6 +41,8 @@ sys.stdout = WebLogRedirector(sys.stdout)
 
 @app.route("/")
 def index():
+    if args.minimal:
+        return send_from_directory("web", "minimal.html")
     return send_from_directory("web", "index.html")
 
 @app.route("/<path:path>")
@@ -59,7 +68,14 @@ def get_state():
         "mode": state.mode,
         "paused": state.paused,
         "targetUid": state.target_uid,
-        "monsters": state.monsters
+        "monsters": state.monsters,
+        "inventory": state.inventory,
+        "map_name": state.map_name,
+        "current_map_hex": state.current_map_hex,
+        "auto_zimov_running": getattr(state, "auto_zimov_running", False),
+        "auto_zimov_kill_count": getattr(state, "auto_zimov_kill_count", 0),
+        "auto_zimov_run_count": getattr(state, "auto_zimov_run_count", 0),
+        "spina_earned": getattr(state, "spina_earned", 0)
     })
 
 @app.route("/api/logs", methods=["GET"])
@@ -96,7 +112,79 @@ def perform_action():
     elif action_type == "set_target":
         state.target_uid = data.get("uid")
         return jsonify({"success": True})
+
+    elif action_type == "teleport":
+        preset = data.get("preset")
+        if preset:
+            threading.Thread(
+                target=teleport_preset,
+                args=(client.sock, preset),
+                daemon=True
+            ).start()
+            return jsonify({"success": True, "target": preset})
+        map_id = data.get("map_id")
+        if map_id:
+            x = data.get("x")
+            y = data.get("y")
+            threading.Thread(
+                target=teleport,
+                args=(client.sock, int(map_id), x, y),
+                daemon=True
+            ).start()
+            return jsonify({"success": True, "map_id": map_id})
+        return jsonify({"error": "Need 'preset' or 'map_id'"}), 400
+
+    elif action_type == "search_maps":
+        query = data.get("query", "")
+        results = find_map_by_name(query)[:20]
+        return jsonify({"results": [{"id": r[0], "hex": f"{r[0]:04X}", "name": r[1]} for r in results]})
+
+    elif action_type == "zimov_boss":
+        from core.boss_module import zimov_battle_thread
         
+        if state.current_map_hex != "3e1c":
+            return jsonify({"status": "error", "message": "Must be in Dierolt (3e1c) to start Zimov"}), 400
+            
+        if state.in_scripted_sequence or getattr(state, "auto_zimov_running", False):
+            return jsonify({"status": "error", "message": "A sequence is already running"}), 400
+            
+        threading.Thread(target=zimov_battle_thread, args=(client.sock,), daemon=True).start()
+        return jsonify({"status": "zimov_started"})
+
+    elif action_type == "kakeula_heal":
+        from core.boss_module import kakeula_heal_thread
+        
+        if state.in_scripted_sequence or getattr(state, "auto_zimov_running", False):
+            return jsonify({"status": "error", "message": "A sequence is already running"}), 400
+            
+        threading.Thread(target=kakeula_heal_thread, args=(client.sock,), daemon=True).start()
+        return jsonify({"status": "heal_started"})
+
+    elif action_type == "kakeula_sell":
+        from core.boss_module import kakeula_sell_thread
+        
+        if state.in_scripted_sequence or getattr(state, "auto_zimov_running", False):
+            return jsonify({"status": "error", "message": "A sequence is already running"}), 400
+            
+        threading.Thread(target=kakeula_sell_thread, args=(client.sock,), daemon=True).start()
+        return jsonify({"status": "sell_started"})
+
+    elif action_type == "start_auto_zimov":
+        from core.boss_module import auto_zimov_loop
+        
+        if state.current_map_hex != "3e1c":
+            return jsonify({"status": "error", "message": "Must be in Dierolt (3e1c) to start"}), 400
+            
+        if getattr(state, "auto_zimov_running", False) or state.in_scripted_sequence:
+            return jsonify({"status": "error", "message": "A sequence is already running"}), 400
+            
+        threading.Thread(target=auto_zimov_loop, args=(client.sock,), daemon=True).start()
+        return jsonify({"status": "auto_zimov_started"})
+        
+    elif action_type == "stop_auto_zimov":
+        state.auto_zimov_running = False
+        return jsonify({"status": "auto_zimov_stopped"})
+
     return jsonify({"error": "Unknown action"}), 400
 
 if __name__ == "__main__":

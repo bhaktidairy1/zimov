@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Iruna Core Command</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <div class="background-anim"></div>
     <div class="container">
-        
+
         <!-- Login Interface -->
         <main id="login-screen" class="glass-panel active">
             <div class="login-header">
@@ -18,12 +21,13 @@
                 <h1>IRUNA <span class="accent">CORE</span></h1>
                 <p>Establishing remote neural link...</p>
             </div>
-            
+
             <div class="input-group">
                 <label>Authentication Mage URL</label>
-                <input type="text" id="mageurl-input" value="https://gae4php82-real.an.r.appspot.com/_ah/login?continue=https://gae4php82-real.an.r.appspot.com/authcreate&auth=g.a0008AjsE7nmtOE_FRrLzq3c0eCenIrHPLtvizyyNSyUpEC01rs3xOPaAL3b6yqU6aCo6AzWVQACgYKAesSARESFQHGX2MivSa5uCui6fUjbNajHhfgERoVAUF8yKoQVfPkaFGTvdLOGFA-XYpY0076">
+                <input type="text" id="mageurl-input"
+                    value="https://gae4php82-real.an.r.appspot.com/_ah/login?continue=https://gae4php82-real.an.r.appspot.com/authcreate&auth=g.a000_AgHxtZwYUg6UzxIoLktRY9_0NIwsEP6RIrKMlJPrvFr7Yz4WpxEYi9ex-vcdsUEikqZzAACgYKAQsSARYSFQHGX2MicDCklNW1k0JgRkX3M-OD0xoVAUF8yKq5o_EDjiK3yaOGce1R1iy20076">
             </div>
-            
+
             <button id="connect-btn" class="sys-btn primary">INITIALIZE CONNECTION</button>
             <div id="login-status" class="status-msg"></div>
         </main>
@@ -57,6 +61,36 @@
                         <input type="text" id="hex-input" placeholder="e.g. 0002143F" class="code-font">
                         <button id="inject-btn" class="sys-btn accent-b">FIRE</button>
                     </div>
+
+                    <div class="separator"></div>
+
+                    <h3>Map Teleport</h3>
+                    <div class="tp-group">
+                        <div id="current-map-display" class="map-display">
+                            Current Map: <span id="map-name" class="accent">Unknown</span>
+                        </div>
+                        <input type="number" id="tp-mapid" placeholder="Map ID (e.g. 25100)"
+                            class="code-font tp-input-full">
+                        <div class="tp-coords">
+                            <input type="number" id="tp-x" placeholder="X" class="code-font tp-input-half" min="0"
+                                max="156">
+                            <input type="number" id="tp-y" placeholder="Y" class="code-font tp-input-half" min="0"
+                                max="156">
+                        </div>
+                        <button id="tp-btn" class="sys-btn tp-go">WARP</button>
+                    </div>
+                    <div id="tp-status" class="tp-status-msg"></div>
+
+                    <div class="separator"></div>
+
+                    <h3>Instance Automation</h3>
+                    <div class="btn-group">
+                        <button id="zimov-btn" class="sys-btn accent-b" disabled>FIGHT ZIMOV</button>
+                        <button id="heal-btn" class="sys-btn accent-b">HEAL @ KAKEULA</button>
+                        <button id="sell-btn" class="sys-btn accent-b">SELL LOOT @ KAKEULA</button>
+                        <button id="auto-zimov-btn" class="sys-btn primary" disabled>AUTO ZIMOV LOOP</button>
+                    </div>
+                    <div id="zimov-status" class="tp-status-msg"></div>
                 </section>
 
                 <!-- Radar -->
@@ -64,6 +98,16 @@
                     <h3>Radar Array</h3>
                     <div id="radar-list" class="list-view">
                         <div class="radar-empty">Awaiting biological targets...</div>
+                    </div>
+                </section>
+
+                <!-- Inventory -->
+                <section class="panel inventory-panel">
+                    <h3>Inventory</h3>
+                    <div style="margin-bottom: 10px; color: #00f0ff;">Spina Earned: <span id="spina-earned"
+                            style="font-weight: bold; text-shadow: 0 0 5px #00f0ff;">0</span></div>
+                    <div id="inventory-list" class="list-view">
+                        <div class="inv-empty">No items loaded...</div>
                     </div>
                 </section>
 
@@ -79,4 +123,5 @@
     </div>
     <script src="app.js"></script>
 </body>
+
 </html>
