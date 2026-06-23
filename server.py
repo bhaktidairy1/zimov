@@ -208,6 +208,28 @@ def perform_action():
 
     return jsonify({"error": "Unknown action"}), 400
 
+@app.route("/api/stop", methods=["POST", "GET"])
+@app.route("/stop", methods=["POST", "GET"])
+def stop_server():
+    print("[!] Shutdown requested via Web UI. Exiting...")
+    os._exit(0)
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
+    def find_free_port(start_port):
+        import socket
+        port = start_port
+        while True:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.bind(("0.0.0.0", port))
+                s.close()
+                return port
+            except OSError:
+                port += 1
+                
+    base_port = int(os.environ.get("PORT", 10000))
+    port = find_free_port(base_port)
+    if port != base_port:
+        print(f"[!] Port {base_port} is occupied. Using port {port} instead.")
+        
     app.run(host="0.0.0.0", port=port, debug=False)

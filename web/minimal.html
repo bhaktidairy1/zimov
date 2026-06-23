@@ -14,51 +14,28 @@
     <h1>Zimov Auto-Farmer (Minimal)</h1>
     
     <div class="section">
-        <h3>1. Connect</h3>
-        <input type="text" id="url" value="https://gae4php82-real.an.r.appspot.com/_ah/login?continue=https://gae4php82-real.an.r.appspot.com/authcreate&auth=g.a000_AgHxtZwYUg6UzxIoLktRY9_0NIwsEP6RIrKMlJPrvFr7Yz4WpxEYi9ex-vcdsUEikqZzAACgYKAQsSARYSFQHGX2MicDCklNW1k0JgRkX3M-OD0xoVAUF8yKq5o_EDjiK3yaOGce1R1iy20076">
-        <br>
-        <button onclick="connect()">Connect</button>
-        <p>Status: <strong id="conn-status">Disconnected</strong></p>
-    </div>
-
-    <div class="section">
-        <h3>2. Automation</h3>
+        <h3>1. Status & Stats</h3>
+        <p>Connection: <strong id="conn-status">Checking...</strong></p>
+        <p>Loop Status: <strong id="auto-status">Unknown</strong></p>
         <p>Map: <span id="map-name">Unknown</span></p>
-        <button onclick="startAuto()">Start Auto Zimov</button>
-        <button onclick="stopAuto()">Stop</button>
-        <p>Loop Status: <strong id="auto-status">Stopped</strong></p>
         <p>Total Runs (7x+Heal): <span id="run-count">0</span></p>
         <p>Total Boss Kills: <span id="kill-count">0</span></p>
         <p>Total Spina Earned: <span id="spina-earned">0</span></p>
+        <button style="background: #900; border-color: #f00; color: #fff; padding: 10px 20px; font-weight: bold;" onclick="killProgram()">Stop Program (Kill)</button>
     </div>
 
     <div class="section">
-        <h3>3. Inventory</h3>
+        <h3>2. Inventory</h3>
         <ul id="inventory-list"></ul>
     </div>
 
     <script>
-        function connect() {
-            document.getElementById('conn-status').innerText = 'Connecting...';
-            fetch('/api/connect', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({url: document.getElementById('url').value})
-            });
-        }
-        function startAuto() {
-            fetch('/api/action', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({type: 'start_auto_zimov'})
-            });
-        }
-        function stopAuto() {
-            fetch('/api/action', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({type: 'stop_auto_zimov'})
-            });
+        function killProgram() {
+            if(confirm("Are you sure you want to completely stop the program?")) {
+                fetch('/api/stop', { method: 'POST' }).then(() => {
+                    document.body.innerHTML = "<h1 style='color:red;'>Program Stopped. You can close this tab.</h1>";
+                });
+            }
         }
         setInterval(() => {
             fetch('/api/state').then(r=>r.json()).then(data => {
