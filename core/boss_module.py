@@ -338,11 +338,6 @@ def auto_zimov_loop(sock):
                 if not state.auto_zimov_running:
                     break
                     
-                bag_usage = calculate_bag_usage()
-                if bag_usage >= 30:
-                    print(f"\n[*] Bag space hit threshold ({bag_usage}/50 slots). Interrupting kills to auto-sell...")
-                    break
-                    
                 print(f"\n[*] Auto-Zimov: Kill {i+1}/7")
                 
                 # Run the battle sequence synchronously
