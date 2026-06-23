@@ -30,26 +30,23 @@ def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: st
     """
     print(f"\n[*] Scripted Warp: {from_map} -> {to_map} ({x}, {y})")
     
-    # Send warp packets with retry loop for dropped packets / server lag
-    for attempt in range(3):
-        state.teleport_event.clear()
-        state.map_ready_event.clear()
-        
-        if send_exit:
-            hex_send(sock, build_warp_exit_packet(portal_id, from_map))
-        hex_send(sock, build_warp_position_packet(to_map, x, y))
-        
-        print(f"    [!] Waiting for Map Sync (b503/b505) [Attempt {attempt+1}/3]...")
-        if state.teleport_event.wait(timeout=10):
-            break # Success!
-            
-        print(f"[-] Teleport timeout (b503). Server unresponsive. Retrying...")
-    else:
+    state.teleport_event.clear()
+    state.map_ready_event.clear()
+    
+    # Send warp packets (No 3006 packets as per user request)
+    # The client sends the 3002 Exit packet and 0110 Position packet back-to-back.
+    if send_exit:
+        hex_send(sock, build_warp_exit_packet(portal_id, from_map))
+    hex_send(sock, build_warp_position_packet(to_map, x, y))
+    
+    # Wait for b503 (or b505) and 0138 Map Ready
+    print("    [!] Waiting for Map Sync (b503/b505) + Ready (0138)...")
+    if not state.teleport_event.wait(timeout=10):
         try: sock.close()
         except: pass
-        log_and_exit("Teleport timeout (b503) after 3 retries. Server dead.")
+        log_and_exit("Teleport timeout (b503). Server unresponsive.")
         
-    print("    [!] Waiting for Map Ready (0138)...")
+    if not state.map_ready_event.wait(timeout=10):
         try: sock.close()
         except: pass
         log_and_exit("Map Ready timeout (0138). Server unresponsive.")
