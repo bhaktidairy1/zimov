@@ -156,18 +156,32 @@ def remove_item(item_id: int, count: int = 1, instance_hex: str = ""):
         if state.inventory[key]["count"] <= 0:
             del state.inventory[key]
 
+def is_stackable(item_id: int) -> bool:
+    """Determine if an item stacks to 99."""
+    name = get_item_name(item_id)
+    if "◇" in name or "▲" in name:
+        return True
+    t = _item_types.get(item_id, -1)
+    if t != -1 and t >= 10:
+        return False
+    return True
+
 def calculate_bag_usage():
     """
     Returns the total number of physical item slots taken up in the bag (max 50).
-    In Iruna, items stack up to 99 per slot. The server often groups identical items 
-    into a single instance ID with a large count. We calculate physical slots by 
-    dividing count by 99 and rounding up.
+    Stackable items take 1 slot per 99 count. Unstackable items (equipments) take 1 slot per 1 count.
     """
     slots_used = 0
     for item_data in state.inventory.values():
-        for slot in item_data.get("slots", []):
-            if slot["count"] > 0:
-                slots_used += math.ceil(slot["count"] / 99.0)
+        total_count = sum(s["count"] for s in item_data.get("slots", []) if s["count"] > 0)
+        if total_count <= 0:
+            continue
+            
+        if is_stackable(item_data["id"]):
+            slots_used += math.ceil(total_count / 99.0)
+        else:
+            slots_used += total_count
+            
     return slots_used
 
 
