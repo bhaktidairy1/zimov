@@ -100,11 +100,14 @@ def zimov_battle_thread(sock):
         
         # Step 3: Wait for Boss Spawn (receiver.py catches 0248/0245)
         print("\n[*] Waiting for Zimov to spawn...")
+        state.boss_spawn_event.clear()
         if not state.boss_spawn_event.wait(timeout=8):
             print("[-] Boss spawn timeout!")
+            import os
+            os._exit(1)
         else:
             print(f"[+] Zimov Spawned! UID: {state.boss_id_hex}")
-            time.sleep(0.1) # Strike immediately!
+            time.sleep(0.2) # Wait 0.2s before strike
             
             # Step 4: Backstab
             print("[*] Executing Backstab Sequence...")
