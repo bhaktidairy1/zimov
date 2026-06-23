@@ -55,10 +55,13 @@ class IrunaClient:
             self.is_connected = False
             return False
 
-        # Phase 3: Start background threads
-        # We no longer fetch inventory synchronously because it can accidentally read the 
-        # Bank/Storage sync packets (0160) that arrive right after login.
-        # The receiver thread will naturally catch the 0120 inventory packets.
+        # Phase 3: Request inventory sync
+        # We send the request here, but we do NOT block waiting for the response.
+        # The background receiver thread will naturally catch the 0120 packets.
+        try:
+            hex_send(self.sock, PKT_INVENTORY_REQ, label="Inventory Request")
+        except Exception as e:
+            print(f"[-] Inventory request failed: {e}")
 
         # Phase 4: Start background threads
         print("\n[+] Game session established. Starting threads...")
