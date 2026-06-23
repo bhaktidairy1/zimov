@@ -32,14 +32,14 @@ def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: st
     
     # Wait for b503 (or b505) and 0138 Map Ready
     print("    [!] Waiting for Map Sync (b503/b505) + Ready (0138)...")
-    if not state.teleport_event.wait(timeout=5):
+    if not state.teleport_event.wait(timeout=15):
         print("[-] Teleport timeout (b503). Server unresponsive. Exiting.")
         try: sock.close()
         except: pass
         import os
         os._exit(1)
         
-    if not state.map_ready_event.wait(timeout=5):
+    if not state.map_ready_event.wait(timeout=15):
         print("[-] Map Ready timeout (0138). Server unresponsive. Exiting.")
         try: sock.close()
         except: pass
@@ -56,7 +56,7 @@ def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: st
     # Wait for 3003 Map Data
     if wait_3003:
         print("    [!] Waiting for Map Data (3003)...")
-        if not state.map_data_event.wait(timeout=5):
+        if not state.map_data_event.wait(timeout=15):
             print("[-] Map Data timeout (3003). Server unresponsive. Exiting.")
             try: sock.close()
             except: pass
@@ -101,7 +101,7 @@ def zimov_battle_thread(sock):
         # Step 3: Wait for Boss Spawn (receiver.py catches 0248/0245)
         print("\n[*] Waiting for Zimov to spawn...")
         state.boss_spawn_event.clear()
-        if not state.boss_spawn_event.wait(timeout=8):
+        if not state.boss_spawn_event.wait(timeout=15):
             print("[-] Boss spawn timeout!")
             import os
             os._exit(1)
@@ -121,7 +121,7 @@ def zimov_battle_thread(sock):
             
             # Wait for boss death confirmation / drops
             print("[*] Waiting for Boss death / drops...")
-            state.boss_death_event.wait(timeout=5)
+            state.boss_death_event.wait(timeout=10)
             
             # Send battle state cleared packet (Client telling server combat is over)
             print("[*] Releasing combat state...")
@@ -131,7 +131,8 @@ def zimov_battle_thread(sock):
             
         # Step 5: 3e76 -> 3e58 (Exit coords roughly 4300 5000)
         # Note: Genuine client skips the 3002 Exit packet when leaving instances!
-        do_warp_sync(sock, "3e76", "3e58", "4300", "5000", send_exit=False, wait_3003=False)
+        # We wait for 3003 here to prevent server race conditions before triggering Step 6.
+        do_warp_sync(sock, "3e76", "3e58", "4300", "5000", send_exit=False, wait_3003=True)
         
         # Step 6: 3e58 -> 3e1c (Exit coords roughly 4300 5200, portal 08)
         # Note: Genuine client sends 3002 Exit and 0110 Pos together, and doesn't wait for 3003!
@@ -185,7 +186,7 @@ def kakeula_heal_thread(sock):
         hex_send(sock, heal_pkt, label="HEAL INTERACTION")
 
         # Wait for 3003 response
-        if not state.map_data_event.wait(timeout=8.0):
+        if not state.map_data_event.wait(timeout=15.0):
             print("[-] Timeout waiting for heal confirmation (3003).")
         else:
             print("[+] Heal confirmed by server.")
