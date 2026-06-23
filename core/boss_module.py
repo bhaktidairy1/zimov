@@ -136,7 +136,8 @@ def zimov_battle_thread(sock):
         
         # Step 6: 3e58 -> 3e1c (Exit coords roughly 4300 5200, portal 08)
         # Note: Genuine client sends 3002 Exit and 0110 Pos together, and doesn't wait for 3003!
-        do_warp_sync(sock, "3e58", "3e1c", "4300", "5200", portal_id="08", wait_3003=False)
+        # HOWEVER, we MUST wait for 3003 here so the next loop doesn't start too early!
+        do_warp_sync(sock, "3e58", "3e1c", "4300", "5200", portal_id="08", wait_3003=True)
         
         print("\n[+] Zimov Sequence Complete.")
         
