@@ -208,10 +208,8 @@ def perform_action():
 
     return jsonify({"error": "Unknown action"}), 400
 
-@app.route("/api/stop", methods=["POST", "GET"])
-@app.route("/stop", methods=["POST", "GET"])
-def stop_server():
-    print("[!] Shutdown requested. Cleaning up resources...")
+def cleanup_and_exit():
+    print("[!] Cleaning up resources...")
     state.auto_zimov_running = False
     
     if client.sock:
@@ -228,6 +226,12 @@ def stop_server():
         
     print("[!] Resources freed. Exiting program.")
     os._exit(0)
+
+@app.route("/api/stop", methods=["POST", "GET"])
+@app.route("/stop", methods=["POST", "GET"])
+def stop_server():
+    print("[!] Shutdown requested via Web UI.")
+    cleanup_and_exit()
 
 if __name__ == "__main__":
     def find_free_port(start_port):
@@ -247,4 +251,8 @@ if __name__ == "__main__":
     if port != base_port:
         print(f"[!] Port {base_port} is occupied. Using port {port} instead.")
         
-    app.run(host="0.0.0.0", port=port, debug=False)
+    try:
+        app.run(host="0.0.0.0", port=port, debug=False)
+    except KeyboardInterrupt:
+        print("\n[!] KeyboardInterrupt detected (CTRL+C).")
+        cleanup_and_exit()
