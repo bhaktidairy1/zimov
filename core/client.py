@@ -46,20 +46,19 @@ class IrunaClient:
 
         try:
             # Phase 2: Enter the game world (13-step replay)
-            start_packet_log()  # Log everything after login
+            import sys
+            if "--minimal" not in sys.argv:
+                start_packet_log()  # Log everything after login (unless minimal mode)
             enter_world(self.sock, self.char_id_hex)
         except Exception as e:
             print(f"[-] World entry failed: {e}")
             self.is_connected = False
             return False
 
-        # Phase 3: Fetch inventory once
-        try:
-            hex_send(self.sock, PKT_INVENTORY_REQ, label="Inventory Request")
-            inv_data = hex_recv(self.sock, label="Inventory Response")
-            parse_inventory_response(inv_data)
-        except Exception as e:
-            print(f"[-] Inventory fetch failed (non-fatal): {e}")
+        # Phase 3: Start background threads
+        # We no longer fetch inventory synchronously because it can accidentally read the 
+        # Bank/Storage sync packets (0160) that arrive right after login.
+        # The receiver thread will naturally catch the 0120 inventory packets.
 
         # Phase 4: Start background threads
         print("\n[+] Game session established. Starting threads...")
