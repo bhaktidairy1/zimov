@@ -16,7 +16,7 @@ from core.packet_helpers import hex_recv, hex_send
 from core.packets import PKT_INIT, build_login_packet
 
 HOST = "202.239.51.41"
-PORT = 30001
+PORT = 30004
 
 
 def fetch_token(mageurl: str) -> str:

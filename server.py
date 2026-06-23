@@ -12,6 +12,7 @@ from core.map_teleport import teleport, teleport_preset, KNOWN_MAPS, find_map_by
 # Parse arguments
 parser = argparse.ArgumentParser(description="Iruna Server")
 parser.add_argument("--minimal", action="store_true", help="Run the server with the minimal web UI")
+parser.add_argument("--url", type=str, help="Launch URL to auto-connect and auto-start")
 args = parser.parse_args()
 
 app = Flask(__name__, static_folder="web")
@@ -39,6 +40,25 @@ class WebLogRedirector:
 
 # Route stdout heavily
 sys.stdout = WebLogRedirector(sys.stdout)
+
+if args.url:
+    def auto_connect_loop():
+        import time
+        print(f"[*] Auto-connecting to {args.url[:50]}...")
+        if client.connect_and_start(args.url):
+            print("[*] Connected! Waiting for world to load...")
+            # Wait until we are fully loaded in a map
+            while not state.current_map_hex:
+                time.sleep(1)
+            # Short buffer to ensure environment is stabilized
+            time.sleep(2)
+            
+            print("[*] World loaded. Starting Auto-Zimov loop!")
+            from core.boss_module import auto_zimov_loop
+            # Start the loop in this thread
+            auto_zimov_loop(client.sock)
+            
+    threading.Thread(target=auto_connect_loop, daemon=True).start()
 
 @app.route("/")
 def index():

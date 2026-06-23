@@ -46,9 +46,7 @@ class IrunaClient:
 
         try:
             # Phase 2: Enter the game world (13-step replay)
-            import sys
-            if "--minimal" not in sys.argv:
-                start_packet_log()  # Log everything after login (unless minimal mode)
+            start_packet_log()  # Log everything after login (rolling log)
             enter_world(self.sock, self.char_id_hex)
         except Exception as e:
             print(f"[-] World entry failed: {e}")

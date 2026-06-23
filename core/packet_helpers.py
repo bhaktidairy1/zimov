@@ -12,6 +12,8 @@ import os
 # ════════════════════════════════════════════
 
 _log_file = None
+_log_filepath = None
+_log_lines = 0
 
 
 def start_packet_log(log_dir=None):
@@ -19,19 +21,21 @@ def start_packet_log(log_dir=None):
     Start logging all packets to a timestamped file.
     Call this after login to capture the full game session.
     """
-    global _log_file
+    global _log_file, _log_filepath, _log_lines
     if log_dir is None:
-        log_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        log_dir = os.path.join(base_dir, "logs")
     os.makedirs(log_dir, exist_ok=True)
     
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    filepath = os.path.join(log_dir, f"packet_log_{timestamp}.txt")
+    _log_filepath = os.path.join(log_dir, f"packet_log_{timestamp}.txt")
     
-    _log_file = open(filepath, "a", encoding="utf-8")
+    _log_file = open(_log_filepath, "a", encoding="utf-8")
     _log_file.write(f"=== Packet Log Started: {datetime.datetime.now()} ===\n")
     _log_file.flush()
-    print(f"[+] Packet logging to: {filepath}")
-    return filepath
+    _log_lines = 0
+    print(f"[+] Packet logging to: {_log_filepath}")
+    return _log_filepath
 
 
 def stop_packet_log():
@@ -45,10 +49,28 @@ def stop_packet_log():
 
 def write_log(line: str):
     """Write a line to the packet log file (if logging is active)."""
+    global _log_file, _log_lines, _log_filepath
     if _log_file:
         ts = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
         _log_file.write(f"[{ts}] {line}\n")
         _log_file.flush()
+        _log_lines += 1
+        
+        import sys
+        if "--minimal" in sys.argv and _log_lines >= 1000:
+            # Rotate log in minimal mode to prevent massive disk usage
+            _log_file.close()
+            backup_path = _log_filepath + ".1"
+            import os
+            if os.path.exists(backup_path):
+                try: os.remove(backup_path)
+                except: pass
+            try: os.rename(_log_filepath, backup_path)
+            except: pass
+            
+            _log_file = open(_log_filepath, "w", encoding="utf-8")
+            _log_file.write(f"=== Packet Log Rolled Over: {datetime.datetime.now()} ===\n")
+            _log_lines = 0
 
 
 # ════════════════════════════════════════════
