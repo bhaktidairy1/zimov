@@ -26,6 +26,7 @@ class GameState:
         self.auto_zimov_kill_count = 0
         self.auto_zimov_run_count = 0
         self.spina_earned = 0
+        self.pet_uid_hex = None
         self.boss_id_hex = None
         self.boss_spawn_event = threading.Event()
         self.boss_death_event = threading.Event()

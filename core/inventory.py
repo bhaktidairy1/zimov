@@ -293,6 +293,22 @@ def handle_item_drop(payload: bytes):
     print(f"\n[+] ITEM DROP: {name} (0x{item_id:04X})")
 
 
+def handle_pet_item_drop(payload: bytes):
+    """
+    Opcode 0xa108 — Pet Item drop/pickup notification.
+    Layout: [Length (4 bytes)] a108 [0000] [ItemID (2 bytes)] ...
+    Since payload strips header and opcode, item ID is at [2:4].
+    """
+    if len(payload) < 6:
+        return
+        
+    item_id = int.from_bytes(payload[2:4], "big")
+    if item_id == 0: return
+    
+    name = get_item_name(item_id)
+    print(f"\n[+] PET ITEM DROP: {name} (0x{item_id:04X})")
+
+
 def handle_inventory_update(payload: bytes):
     """
     Opcode 0x4018 — Inventory slot updated by server.

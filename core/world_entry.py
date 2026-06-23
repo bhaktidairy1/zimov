@@ -19,6 +19,7 @@ from core.packets import (
     build_world_ticks_packet,
     PKT_WARP_SYNC_START, PKT_WARP_SYNC_END,
     build_warp_exit_packet, build_warp_position_packet, build_warp_entry_packet,
+    PKT_SUMMON_PET,
 )
 from core.map_teleport import get_map_name
 
@@ -180,6 +181,19 @@ def enter_world(sock, char_id_hex: str):
     hex_recv(sock, label="Server Update")
 
     # current_map_hex already set by _parse_spawn_coords from b503
+
+    # Step 14: Summon Pet
+    import re
+    # The pet structure in the character info packet is typically: 
+    # [UID (8 hex chars)] 0064 [Name Length (4 hex chars)] [Name]
+    pet_match = re.search(r"([0-9a-f]{8})006400[0-9a-f]{2}", login_buffer, re.IGNORECASE)
+    if pet_match:
+        state.pet_uid_hex = pet_match.group(1)
+        print(f"[+] Found Pet! UID: {state.pet_uid_hex}")
+        _send_and_log(sock, PKT_SUMMON_PET, "Summon Pet Opcode")
+        _send_and_log(sock, state.pet_uid_hex, "Summon Pet UID")
+    else:
+        print("[-] No pets found in login sequence.")
 
 
 def warp_to_map(sock, target_map: str, portal_id: str, x: str, y: str):

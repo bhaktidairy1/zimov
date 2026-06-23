@@ -11,12 +11,13 @@ import binascii
 from core.game_state import state
 from core.packets import (
     OP_MAP_SYNC, OP_MAP_SYNC_B505, OP_MOB_SPAWN, OP_ENTITY_DEATH, OP_HIT_CONFIRM,
-    OP_INVENTORY, OP_ITEM_DROP, OP_INV_UPDATE, OP_MAP_READY, OP_MAP_DATA, OP_BOSS_SPAWN
+    OP_INVENTORY, OP_ITEM_DROP, OP_INV_UPDATE, OP_MAP_READY, OP_MAP_DATA, OP_BOSS_SPAWN,
+    OP_PET_ITEM_DROP,
 )
 from core.map_teleport import get_map_name
 from core.packet_helpers import write_log
 from core.inventory import (
-    handle_item_drop, handle_inventory_update, handle_full_inventory,
+    handle_item_drop, handle_inventory_update, handle_full_inventory, handle_pet_item_drop,
 )
 
 
@@ -139,6 +140,7 @@ HANDLERS = {
     OP_INVENTORY:       handle_full_inventory,
     OP_ITEM_DROP:       handle_item_drop,
     OP_INV_UPDATE:      handle_inventory_update,
+    OP_PET_ITEM_DROP:   handle_pet_item_drop,
     OP_MAP_READY:       handle_map_ready,
     OP_MAP_DATA:        handle_map_data,
 }
