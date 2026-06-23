@@ -57,6 +57,8 @@ def connect_and_login(mageurl: str) -> tuple:
     """
     # Step 1: Get auth token
     token_hex = fetch_token(mageurl)
+    if not token_hex:
+        raise ConnectionError("Failed to fetch token (empty). Check if the URL is correct and wrapped in quotes!")
     
     # Step 2: TCP connect
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
