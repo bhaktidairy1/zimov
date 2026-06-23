@@ -11,7 +11,7 @@ import binascii
 from core.game_state import state
 from core.packets import (
     OP_MAP_SYNC, OP_MAP_SYNC_B505, OP_MOB_SPAWN, OP_ENTITY_DEATH, OP_HIT_CONFIRM,
-    OP_INVENTORY, OP_ITEM_DROP, OP_INV_UPDATE, OP_MAP_READY, OP_MAP_DATA,
+    OP_INVENTORY, OP_ITEM_DROP, OP_INV_UPDATE, OP_MAP_READY, OP_MAP_DATA, OP_BOSS_SPAWN
 )
 from core.map_teleport import get_map_name
 from core.packet_helpers import write_log
@@ -133,6 +133,7 @@ HANDLERS = {
     OP_MAP_SYNC:        handle_map_sync_b503,
     OP_MAP_SYNC_B505:   handle_map_sync_b505,
     OP_MOB_SPAWN:       handle_mob_spawn,
+    OP_BOSS_SPAWN:      handle_mob_spawn,
     OP_ENTITY_DEATH:    handle_entity_death,
     OP_HIT_CONFIRM:     handle_hit_confirm,
     OP_INVENTORY:       handle_full_inventory,
