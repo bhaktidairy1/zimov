@@ -58,16 +58,8 @@ def write_log(line: str):
         
         import sys
         if "--minimal" in sys.argv and _log_lines >= 1000:
-            # Rotate log in minimal mode to prevent massive disk usage
+            # Overwrite log in minimal mode to strictly cap disk usage
             _log_file.close()
-            backup_path = _log_filepath + ".1"
-            import os
-            if os.path.exists(backup_path):
-                try: os.remove(backup_path)
-                except: pass
-            try: os.rename(_log_filepath, backup_path)
-            except: pass
-            
             _log_file = open(_log_filepath, "w", encoding="utf-8")
             _log_file.write(f"=== Packet Log Rolled Over: {datetime.datetime.now()} ===\n")
             _log_lines = 0
