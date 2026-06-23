@@ -194,8 +194,9 @@ def parse_inventory_response(data: bytes):
     except Exception:
         pass
         
-    # Only clear inventory when receiving the Main Bag
-    state.inventory.clear()
+    # Do NOT clear the inventory here! Iruna sends the main bag in multiple chunked 0120 packets 
+    # (e.g. 15 items per packet). If we clear it here, the chunks overwrite each other!
+    # state.inventory.clear()
         
     # Skip past: 0120 (4 chars) + count (8 chars) + bag ID (4 chars)
     scan_start = idx + 4 + 8 + 4
