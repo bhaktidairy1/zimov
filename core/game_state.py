@@ -18,6 +18,7 @@ class GameState:
         self.teleport_success = False
         self.map_ready_event = threading.Event()
         self.map_data_event = threading.Event()
+        self.check_alive_event = threading.Event()
 
         # Scripting & Boss Automation
         self.in_scripted_sequence = False

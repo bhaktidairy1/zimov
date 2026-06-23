@@ -15,23 +15,42 @@ from core.packets import build_attack_packet, build_coord_packet
 def coordinate_sender(sock):
     """
     Heartbeat loop — sends 0101 position packet every 1 second.
+    Every 10 seconds, sends a 0002ffff check-alive and waits for a response (up to 5s).
     
     If targeting a monster, uses the monster's position instead
     of the player's last known coords (moves toward target).
     Pauses when state.paused is True (safe for manual warping).
     """
+    import os
+    ticks = 0
     while not state.stop_event.is_set():
         if state.paused or state.in_scripted_sequence:
             time.sleep(0.5)
             continue
+            
+        ticks += 1
         try:
-            current_pos = state.last_map_coords
-            if state.target_uid and state.target_uid in state.monsters:
-                m = state.monsters[state.target_uid]
-                current_pos = m['x'] + m['y']
-            hex_send(sock, build_coord_packet(current_pos))
+            if ticks % 10 == 0:
+                # 10-second check-alive heartbeat
+                state.check_alive_event.clear()
+                hex_send(sock, "0002ffff", label="STANDBY KEEP-ALIVE")
+                
+                # Wait for response, blocking coordinate sends during this wait
+                if not state.check_alive_event.wait(timeout=5.0):
+                    print("[-] Keep-Alive timeout (0002ffff). Server unresponsive in standby. Exiting.")
+                    try: sock.close()
+                    except: pass
+                    os._exit(1)
+            else:
+                # Regular coordinate send
+                current_pos = state.last_map_coords
+                if state.target_uid and state.target_uid in state.monsters:
+                    m = state.monsters[state.target_uid]
+                    current_pos = m['x'] + m['y']
+                hex_send(sock, build_coord_packet(current_pos))
         except:
             break
+            
         time.sleep(1.0)
 
 

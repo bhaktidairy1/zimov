@@ -129,6 +129,7 @@ def handle_map_data(payload: bytes):
 # Add new opcode handlers here — no need to touch the receiver loop.
 
 HANDLERS = {
+    0xffff: lambda p: state.check_alive_event.set(),
     OP_MAP_SYNC:        handle_map_sync_b503,
     OP_MAP_SYNC_B505:   handle_map_sync_b505,
     OP_MOB_SPAWN:       handle_mob_spawn,
