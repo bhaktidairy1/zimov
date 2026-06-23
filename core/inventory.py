@@ -320,39 +320,46 @@ def handle_inventory_update(payload: bytes):
     """
     Opcode 0x4018 — Inventory slot updated by server.
     
-    Payload layout (observed from battle data):
-      [0:4]  action type (00000001 = add/set)
-      [4:6]  slot / padding
-      [6:8]  item_id (2 bytes, big-endian)
-      [8]    delta (1 byte, e.g. 01 for +1)
-      [9:11] padding
+    Payload layout can contain MULTIPLE item updates if multiple items drop at once.
+    [0:4]  action type (00000001 = add/set, 00000002 = add/set multiple?)
+    [4:6]  count of items being updated / padding
+    Then for each item updated (7 bytes each):
+      [0:2] item_id
+      [2:3] delta
+      [3:7] instance/padding
     """
     if len(payload) < 9:
         return
 
-    item_id = int.from_bytes(payload[6:8], "big")
-    if item_id == 0:
-        return
+    # To handle multiple updates in a single 4018 packet, we scan it dynamically
+    # just like we do for 0120. We start at offset 6.
+    
+    idx = 6
+    while idx + 3 <= len(payload):
+        item_id = int.from_bytes(payload[idx:idx+2], "big")
+        
+        # 0 is usually padding or end of stream
+        if item_id == 0:
+            idx += 7  # Typical chunk size is 7 bytes
+            continue
+            
+        # Parse signed 8-bit integer for the delta
+        delta = int.from_bytes(payload[idx+2:idx+3], byteorder="big", signed=True)
+        
+        if delta > 0:
+            add_item(item_id, count=delta, instance_hex="")
+        elif delta < 0:
+            remove_item(item_id, count=abs(delta))
 
-    # Parse as signed 8-bit integer for the delta
-    delta = int.from_bytes(payload[8:9], byteorder="big", signed=True) if len(payload) > 8 else 1
-
-    # The 4018 update applies to the slot that was just dropped, but we don't
-    # have the exact instance hex here easily unless we parse it from previous 0123s.
-    # But since delta > 0 usually just means a count goes up, we just log it.
-    if delta > 0:
-        # Fallback to empty instance if not tracking specifics correctly here
-        add_item(item_id, count=delta, instance_hex="")
-    elif delta < 0:
-        remove_item(item_id, count=abs(delta))
-
-    name = get_item_name(item_id)
-    key = _inv_key(item_id)
-    if key in state.inventory:
-        total = state.inventory[key]["count"]
-        print(f"[+] INV UPDATE: {name} (0x{item_id:04X}) | delta: {delta:+} => total: {total} ({calculate_bag_usage()}/50 slots)")
-    else:
-        print(f"[+] INV UPDATE: {name} (0x{item_id:04X}) | delta: {delta:+} => removed from bag")
+        name = get_item_name(item_id)
+        key = _inv_key(item_id)
+        if key in state.inventory:
+            total = state.inventory[key]["count"]
+            print(f"[+] INV UPDATE: {name} (0x{item_id:04X}) | delta: {delta:+} => total: {total} ({calculate_bag_usage()}/50 slots)")
+        else:
+            print(f"[+] INV UPDATE: {name} (0x{item_id:04X}) | delta: {delta:+} => removed from bag")
+            
+        idx += 7
 
 
 def handle_full_inventory(payload: bytes):
