@@ -32,8 +32,19 @@ def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: st
     
     # Wait for b503 (or b505) and 0138 Map Ready
     print("    [!] Waiting for Map Sync (b503/b505) + Ready (0138)...")
-    state.teleport_event.wait(timeout=5)
-    state.map_ready_event.wait(timeout=5)
+    if not state.teleport_event.wait(timeout=5):
+        print("[-] Teleport timeout (b503). Server unresponsive. Exiting.")
+        try: sock.close()
+        except: pass
+        import os
+        os._exit(1)
+        
+    if not state.map_ready_event.wait(timeout=5):
+        print("[-] Map Ready timeout (0138). Server unresponsive. Exiting.")
+        try: sock.close()
+        except: pass
+        import os
+        os._exit(1)
     
     # Clear map data event just before we trigger the entry, to avoid premature triggers
     state.map_data_event.clear()
@@ -45,7 +56,12 @@ def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: st
     # Wait for 3003 Map Data
     if wait_3003:
         print("    [!] Waiting for Map Data (3003)...")
-        state.map_data_event.wait(timeout=5)
+        if not state.map_data_event.wait(timeout=5):
+            print("[-] Map Data timeout (3003). Server unresponsive. Exiting.")
+            try: sock.close()
+            except: pass
+            import os
+            os._exit(1)
     
     time.sleep(0.1)
 

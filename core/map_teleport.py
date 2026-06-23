@@ -179,18 +179,28 @@ def teleport(sock, map_id: int, x: int = None, y: int = None):
                     if state.map_data_event.wait(timeout=5.0):
                         print("[+] Received 3003 Map Data. Map entry complete.")
                     else:
-                        print("[-] Timeout waiting for 3003 Map Data, resuming anyway.")
+                        print("[-] Map Data timeout (3003). Server unresponsive. Exiting.")
+                        try: sock.close()
+                        except: pass
+                        import os
+                        os._exit(1)
 
                     return {"status": "success", "map_id": map_id, "x": x, "y": y}
                 else:
-                    print("[-] Teleport timeout. Did not receive 0138 Map Ready from server.")
-                    return
+                    print("[-] Map Ready timeout (0138). Server unresponsive. Exiting.")
+                    try: sock.close()
+                    except: pass
+                    import os
+                    os._exit(1)
             else:
                 print("[-] Teleport REJECTED by server (b505). Aborting map entry sequence.")
                 return
 
-        print("[-] Teleport timeout. Did not receive b503 Map Sync from server.")
-        return
+        print("[-] Teleport timeout (b503). Server unresponsive. Exiting.")
+        try: sock.close()
+        except: pass
+        import os
+        os._exit(1)
             
     finally:
         # Resume navigation heartbeat if it was running before

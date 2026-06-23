@@ -60,7 +60,7 @@ def connect_and_login(mageurl: str) -> tuple:
     
     # Step 2: TCP connect
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.settimeout(5.0)
+    sock.settimeout(20.0)
     print(f"[+] Connecting to {HOST}:{PORT} …")
     sock.connect((HOST, PORT))
     print("[+] Connected.\n")
@@ -112,4 +112,4 @@ def _parse_char_id(sock: socket.socket) -> str:
         sock.close()
         raise ConnectionError("Timeout waiting for ff03 packet")
     finally:
-        sock.settimeout(5.0)
+        sock.settimeout(20.0)
