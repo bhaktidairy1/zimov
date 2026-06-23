@@ -177,16 +177,28 @@ def parse_inventory_response(data: bytes):
     Observed entry pattern near each item:
       [item_id 2B] [instance_id 4B] [count/flags 2B+]
     """
-    state.inventory.clear()
     h = binascii.hexlify(data).decode()
 
-    # Find the 0120 opcode in the received data and skip past it + header
+    # Find the 0120 opcode in the received data
     idx = h.find("0120")
     if idx == -1:
         print("[-] No 0120 opcode found in response")
         return
-    # Skip past: 0120 (4 chars) + header bytes (8 chars for 00000030)
-    scan_start = idx + 4 + 8
+        
+    # Check Bag ID to prevent Coin Bag from overwriting Main Bag
+    try:
+        bag_id = int(h[idx+12:idx+16], 16)
+        if bag_id != 0:
+            print(f"[*] Ignoring 0120 sync for alternate bag (ID {bag_id})")
+            return
+    except Exception:
+        pass
+        
+    # Only clear inventory when receiving the Main Bag
+    state.inventory.clear()
+        
+    # Skip past: 0120 (4 chars) + count (8 chars) + bag ID (4 chars)
+    scan_start = idx + 4 + 8 + 4
     payload_hex = h[scan_start:]
 
     items_found = 0
