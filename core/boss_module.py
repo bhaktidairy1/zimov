@@ -352,7 +352,7 @@ def auto_zimov_loop(sock):
             bag_usage = calculate_bag_usage()
             print(f"\n[*] Auto-Zimov: Checking Bag Space ({bag_usage}/50 slots used)")
             
-            if bag_usage >= 40:
+            if bag_usage >= 30:
                 print("[*] Bag nearly full! Initiating Auto-Sell...")
                 kakeula_sell_thread(sock)
             else:

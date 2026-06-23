@@ -157,13 +157,18 @@ def remove_item(item_id: int, count: int = 1, instance_hex: str = ""):
             del state.inventory[key]
 
 def is_stackable(item_id: int) -> bool:
-    """Determine if an item stacks to 99."""
-    name = get_item_name(item_id)
-    if "◇" in name or "▲" in name:
-        return True
-    t = _item_types.get(item_id, -1)
-    if t != -1 and t >= 10:
+    """
+    Determine if an item stacks to 99.
+    Instead of relying on ItemMaster.sql types, we use a simple heuristic:
+    Only known farmable unstackable items (like Esmeralda) are marked False.
+    For everything else (including single equipped items), returning True is mathematically harmless 
+    because ceil(1/99) == 1 slot regardless.
+    """
+    # Esmeralda and its slot variants
+    unstackable_ids = {1459, 5209, 5703, 5734, 5775, 5884}
+    if item_id in unstackable_ids:
         return False
+        
     return True
 
 def calculate_bag_usage():
