@@ -123,6 +123,12 @@ def zimov_battle_thread(sock):
             print("[*] Waiting for Boss death / drops...")
             state.boss_death_event.wait(timeout=5)
             
+            # Send battle state cleared packet (Client telling server combat is over)
+            print("[*] Releasing combat state...")
+            battle_end_pkt = "00060157" + state.boss_id_hex
+            hex_send(sock, battle_end_pkt)
+            time.sleep(0.1)
+            
         # Step 5: 3e76 -> 3e58 (Exit coords roughly 4300 5000)
         # Note: Genuine client skips the 3002 Exit packet when leaving instances!
         do_warp_sync(sock, "3e76", "3e58", "4300", "5000", send_exit=False, wait_3003=False)
