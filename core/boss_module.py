@@ -114,7 +114,6 @@ def zimov_battle_thread(sock):
             # 000a01431b870102 + Boss UID
             cast_pkt = BACKSTAB_CAST_PREFIX + state.boss_id_hex
             hex_send(sock, cast_pkt)
-            time.sleep(0.1)
             
             # 000e01484e210102 + Boss UID + 000000b4 (max dmg flag)
             dmg_pkt = BACKSTAB_DAMAGE_PREFIX + state.boss_id_hex + "000000b4"
@@ -123,8 +122,6 @@ def zimov_battle_thread(sock):
             # Wait for boss death confirmation / drops
             print("[*] Waiting for Boss death / drops...")
             state.boss_death_event.wait(timeout=5)
-            # Add a slight delay to ensure the receiver processes the 0123/4018 items
-            time.sleep(1.0)
             
         # Step 5: 3e76 -> 3e58 (Exit coords roughly 4300 5000)
         # Note: Genuine client skips the 3002 Exit packet when leaving instances!
