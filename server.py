@@ -211,7 +211,22 @@ def perform_action():
 @app.route("/api/stop", methods=["POST", "GET"])
 @app.route("/stop", methods=["POST", "GET"])
 def stop_server():
-    print("[!] Shutdown requested via Web UI. Exiting...")
+    print("[!] Shutdown requested. Cleaning up resources...")
+    state.auto_zimov_running = False
+    
+    if client.sock:
+        try:
+            client.sock.close()
+        except:
+            pass
+            
+    try:
+        from core.packet_helpers import stop_packet_log
+        stop_packet_log()
+    except:
+        pass
+        
+    print("[!] Resources freed. Exiting program.")
     os._exit(0)
 
 if __name__ == "__main__":
