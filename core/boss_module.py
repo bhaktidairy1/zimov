@@ -15,6 +15,15 @@ from core.inventory import calculate_bag_usage
 BACKSTAB_CAST_PREFIX   = "000a01431b870102"
 BACKSTAB_DAMAGE_PREFIX = "000e01484e210102"
 
+def log_and_exit(msg):
+    import os
+    from core.packet_helpers import write_log
+    print(f"\n[CRITICAL EXIT] {msg}")
+    write_log(f"CRITICAL EXIT TRIGGERED: {msg}")
+    os._exit(1)
+BACKSTAB_CAST_PREFIX   = "000a01431b870102"
+BACKSTAB_DAMAGE_PREFIX = "000e01484e210102"
+
 def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: str = "00", send_exit: bool = True, wait_3003: bool = True):
     """
     Executes a single step of the warp sequence and waits for b503/b505 Map Sync.
@@ -32,19 +41,15 @@ def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: st
     
     # Wait for b503 (or b505) and 0138 Map Ready
     print("    [!] Waiting for Map Sync (b503/b505) + Ready (0138)...")
-    if not state.teleport_event.wait(timeout=15):
-        print("[-] Teleport timeout (b503). Server unresponsive. Exiting.")
+    if not state.teleport_event.wait(timeout=5):
         try: sock.close()
         except: pass
-        import os
-        os._exit(1)
+        log_and_exit("Teleport timeout (b503). Server unresponsive.")
         
-    if not state.map_ready_event.wait(timeout=15):
-        print("[-] Map Ready timeout (0138). Server unresponsive. Exiting.")
+    if not state.map_ready_event.wait(timeout=5):
         try: sock.close()
         except: pass
-        import os
-        os._exit(1)
+        log_and_exit("Map Ready timeout (0138). Server unresponsive.")
     
     # Clear map data event just before we trigger the entry, to avoid premature triggers
     state.map_data_event.clear()
@@ -56,12 +61,10 @@ def do_warp_sync(sock, from_map: str, to_map: str, x: str, y: str, portal_id: st
     # Wait for 3003 Map Data
     if wait_3003:
         print("    [!] Waiting for Map Data (3003)...")
-        if not state.map_data_event.wait(timeout=15):
-            print("[-] Map Data timeout (3003). Server unresponsive. Exiting.")
+        if not state.map_data_event.wait(timeout=5):
             try: sock.close()
             except: pass
-            import os
-            os._exit(1)
+            log_and_exit("Map Data timeout (3003). Server unresponsive.")
     
     time.sleep(0.1)
 
@@ -101,10 +104,8 @@ def zimov_battle_thread(sock):
         # Step 3: Wait for Boss Spawn (receiver.py catches 0248/0245)
         print("\n[*] Waiting for Zimov to spawn...")
         state.boss_spawn_event.clear()
-        if not state.boss_spawn_event.wait(timeout=15):
-            print("[-] Boss spawn timeout!")
-            import os
-            os._exit(1)
+        if not state.boss_spawn_event.wait(timeout=8):
+            log_and_exit("Boss spawn timeout! (Waited 8s for 0248/0245)")
         else:
             print(f"[+] Zimov Spawned! UID: {state.boss_id_hex}")
             time.sleep(0.2) # Wait 0.2s before strike
@@ -121,7 +122,7 @@ def zimov_battle_thread(sock):
             
             # Wait for boss death confirmation / drops
             print("[*] Waiting for Boss death / drops...")
-            state.boss_death_event.wait(timeout=10)
+            state.boss_death_event.wait(timeout=5)
             
             # Send battle state cleared packet (Client telling server combat is over)
             print("[*] Releasing combat state...")
@@ -131,8 +132,7 @@ def zimov_battle_thread(sock):
             
         # Step 5: 3e76 -> 3e58 (Exit coords roughly 4300 5000)
         # Note: Genuine client skips the 3002 Exit packet when leaving instances!
-        # We wait for 3003 here to prevent server race conditions before triggering Step 6.
-        do_warp_sync(sock, "3e76", "3e58", "4300", "5000", send_exit=False, wait_3003=True)
+        do_warp_sync(sock, "3e76", "3e58", "4300", "5000", send_exit=False, wait_3003=False)
         
         # Step 6: 3e58 -> 3e1c (Exit coords roughly 4300 5200, portal 08)
         # Note: Genuine client sends 3002 Exit and 0110 Pos together, and doesn't wait for 3003!
@@ -186,7 +186,7 @@ def kakeula_heal_thread(sock):
         hex_send(sock, heal_pkt, label="HEAL INTERACTION")
 
         # Wait for 3003 response
-        if not state.map_data_event.wait(timeout=15.0):
+        if not state.map_data_event.wait(timeout=8.0):
             print("[-] Timeout waiting for heal confirmation (3003).")
         else:
             print("[+] Heal confirmed by server.")
