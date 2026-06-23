@@ -10,6 +10,7 @@ Item DB loaded from ItemMaster.sql (optional — code works without it).
 """
 import os
 import re
+import math
 import sqlite3
 import binascii
 
@@ -156,10 +157,17 @@ def remove_item(item_id: int, count: int = 1, instance_hex: str = ""):
             del state.inventory[key]
 
 def calculate_bag_usage():
-    """Returns the total number of unique item slots taken up in the bag (max 50)"""
+    """
+    Returns the total number of physical item slots taken up in the bag (max 50).
+    In Iruna, items stack up to 99 per slot. The server often groups identical items 
+    into a single instance ID with a large count. We calculate physical slots by 
+    dividing count by 99 and rounding up.
+    """
     slots_used = 0
     for item_data in state.inventory.values():
-        slots_used += len(item_data.get("slots", []))
+        for slot in item_data.get("slots", []):
+            if slot["count"] > 0:
+                slots_used += math.ceil(slot["count"] / 99.0)
     return slots_used
 
 
