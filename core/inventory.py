@@ -305,8 +305,15 @@ def handle_pet_item_drop(payload: bytes):
     item_id = int.from_bytes(payload[2:4], "big")
     if item_id == 0: return
     
+    # Pet drops go directly to the main bag, but the server skips sending 
+    # a 4018 update packet for them. We manually increment here.
+    add_item(item_id, count=1, instance_hex="")
+    
     name = get_item_name(item_id)
-    print(f"\n[+] PET ITEM DROP: {name} (0x{item_id:04X})")
+    key = _inv_key(item_id)
+    total = state.inventory[key]["count"]
+    
+    print(f"\n[+] PET ITEM DROP: {name} (0x{item_id:04X}) | total: {total} ({calculate_bag_usage()}/50 slots)")
 
 
 def handle_inventory_update(payload: bytes):
