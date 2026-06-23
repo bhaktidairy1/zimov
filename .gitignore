@@ -1,3 +1,4 @@
 packet_log_*.txt
 __pycache__/
 *.pyc
+logs/
