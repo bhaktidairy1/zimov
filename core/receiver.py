@@ -200,7 +200,9 @@ def continuous_receiver(sock: socket.socket):
                 buffer = buffer[total_pkt_size:]
                 
         except socket.timeout:
-            continue
+            print("\n[!!!] NO SERVER RESPONSE FOR 5 SECONDS. CONNECTION DEAD. EXITING.")
+            import os
+            os._exit(1)
         except Exception as e:
             print(f"[CRITICAL] Error in receiver: {e}")
             break
