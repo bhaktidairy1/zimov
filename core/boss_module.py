@@ -143,6 +143,8 @@ def zimov_battle_thread(sock):
         
     except Exception as e:
         print(f"[CRITICAL] Zimov sequence failed: {e}")
+        if "10054" in str(e) or "closed" in str(e).lower() or isinstance(e, (ConnectionError, OSError)):
+            log_and_exit(f"Connection dropped ({e}). Stopping automation.")
         
     finally:
         # Return control
@@ -200,6 +202,8 @@ def kakeula_heal_thread(sock):
 
     except Exception as e:
         print(f"[-] Kakeula Heal Sequence Error: {e}")
+        if "10054" in str(e) or "closed" in str(e).lower() or isinstance(e, (ConnectionError, OSError)):
+            log_and_exit(f"Connection dropped during heal ({e}). Stopping automation.")
     finally:
         state.in_scripted_sequence = False
 
