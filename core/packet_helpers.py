@@ -10,10 +10,12 @@ import os
 # ════════════════════════════════════════════
 #  FILE LOGGING
 # ════════════════════════════════════════════
+import threading
 
 _log_file = None
 _log_filepath = None
 _log_lines = 0
+_log_lock = threading.Lock()
 
 
 def start_packet_log(log_dir=None):
@@ -22,47 +24,56 @@ def start_packet_log(log_dir=None):
     Call this after login to capture the full game session.
     """
     global _log_file, _log_filepath, _log_lines
-    if log_dir is None:
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        log_dir = os.path.join(base_dir, "logs")
-    os.makedirs(log_dir, exist_ok=True)
-    
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    _log_filepath = os.path.join(log_dir, f"packet_log_{timestamp}.txt")
-    
-    _log_file = open(_log_filepath, "a", encoding="utf-8")
-    _log_file.write(f"=== Packet Log Started: {datetime.datetime.now()} ===\n")
-    _log_file.flush()
-    _log_lines = 0
-    print(f"[+] Packet logging to: {_log_filepath}")
-    return _log_filepath
+    with _log_lock:
+        if log_dir is None:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            log_dir = os.path.join(base_dir, "logs")
+        os.makedirs(log_dir, exist_ok=True)
+        
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        _log_filepath = os.path.join(log_dir, f"packet_log_{timestamp}.txt")
+        
+        _log_file = open(_log_filepath, "a", encoding="utf-8")
+        _log_file.write(f"=== Packet Log Started: {datetime.datetime.now()} ===\n")
+        _log_file.flush()
+        _log_lines = 0
+        print(f"[+] Packet logging to: {_log_filepath}")
+        return _log_filepath
 
 
 def stop_packet_log():
     """Close the log file."""
     global _log_file
-    if _log_file:
-        _log_file.write(f"=== Packet Log Ended: {datetime.datetime.now()} ===\n")
-        _log_file.close()
-        _log_file = None
+    with _log_lock:
+        if _log_file:
+            try:
+                _log_file.write(f"=== Packet Log Ended: {datetime.datetime.now()} ===\n")
+                _log_file.close()
+            except Exception:
+                pass
+            _log_file = None
 
 
 def write_log(line: str):
     """Write a line to the packet log file (if logging is active)."""
     global _log_file, _log_lines, _log_filepath
-    if _log_file:
-        ts = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
-        _log_file.write(f"[{ts}] {line}\n")
-        _log_file.flush()
-        _log_lines += 1
-        
-        import sys
-        if "--minimal" in sys.argv and _log_lines >= 1000:
-            # Overwrite log in minimal mode to strictly cap disk usage
-            _log_file.close()
-            _log_file = open(_log_filepath, "w", encoding="utf-8")
-            _log_file.write(f"=== Packet Log Rolled Over: {datetime.datetime.now()} ===\n")
-            _log_lines = 0
+    with _log_lock:
+        if _log_file:
+            ts = datetime.datetime.now().strftime("%H:%M:%S.%f")[:-3]
+            try:
+                _log_file.write(f"[{ts}] {line}\n")
+                _log_file.flush()
+                _log_lines += 1
+                
+                import sys
+                if "--minimal" in sys.argv and _log_lines >= 1000:
+                    # Overwrite log in minimal mode to strictly cap disk usage
+                    _log_file.close()
+                    _log_file = open(_log_filepath, "w", encoding="utf-8")
+                    _log_file.write(f"=== Packet Log Rolled Over: {datetime.datetime.now()} ===\n")
+                    _log_lines = 0
+            except Exception:
+                pass
 
 
 # ════════════════════════════════════════════
