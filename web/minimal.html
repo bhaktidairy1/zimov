@@ -27,7 +27,6 @@
         <p>Total Runs (7x+Heal): <span id="run-count">0</span></p>
         <p>Total Boss Kills: <span id="kill-count">0</span></p>
         <p>Total Spina Earned: <span id="spina-earned">0</span></p>
-        <button style="background: #900; border-color: #f00; color: #fff; padding: 10px 20px; font-weight: bold;" onclick="killProgram()">Stop Program (Kill)</button>
     </div>
 
     <div class="section">
@@ -49,11 +48,6 @@
             document.getElementById("status-section").style.display = "block";
         }
 
-        function killProgram() {
-            fetch('/api/stop', { method: 'POST' }).then(() => {
-                document.body.innerHTML = "<h1 style='color:red;'>Program Stopped. You can close this tab.</h1>";
-            });
-        }
         setInterval(() => {
             fetch('/api/state').then(r=>r.json()).then(data => {
                 if (data.connected) {
