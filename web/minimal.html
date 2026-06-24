@@ -12,8 +12,14 @@
 </head>
 <body>
     <h1>Zimov Auto-Farmer (Minimal)</h1>
-    
-    <div class="section">
+    <div id="login-section" class="section">
+        <h3>0. Authentication</h3>
+        <p>Paste your Mage URL below to connect and auto-start the Zimov loop.</p>
+        <input type="text" id="auth-url" placeholder="https://gae4php82-real.an.r.appspot.com/...">
+        <button style="background: #0f0; color: #000; border-color: #0f0; padding: 10px 20px; font-weight: bold;" onclick="connectBot()">CONNECT & START</button>
+    </div>
+
+    <div id="status-section" class="section" style="display: none;">
         <h3>1. Status & Stats</h3>
         <p>Connection: <strong id="conn-status">Checking...</strong></p>
         <p>Loop Status: <strong id="auto-status">Unknown</strong></p>
@@ -30,6 +36,19 @@
     </div>
 
     <script>
+        function connectBot() {
+            const url = document.getElementById("auth-url").value;
+            if(!url) return alert("Please enter a URL");
+            
+            fetch('/api/connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url })
+            });
+            document.getElementById("login-section").style.display = "none";
+            document.getElementById("status-section").style.display = "block";
+        }
+
         function killProgram() {
             fetch('/api/stop', { method: 'POST' }).then(() => {
                 document.body.innerHTML = "<h1 style='color:red;'>Program Stopped. You can close this tab.</h1>";
@@ -37,6 +56,10 @@
         }
         setInterval(() => {
             fetch('/api/state').then(r=>r.json()).then(data => {
+                if (data.connected) {
+                    document.getElementById("login-section").style.display = "none";
+                    document.getElementById("status-section").style.display = "block";
+                }
                 document.getElementById('conn-status').innerText = data.connected ? 'Connected' : 'Disconnected';
                 document.getElementById('auto-status').innerText = data.auto_zimov_running ? 'Running' : 'Stopped';
                 document.getElementById('run-count').innerText = data.auto_zimov_run_count || 0;

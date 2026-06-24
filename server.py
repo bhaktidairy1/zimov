@@ -77,7 +77,20 @@ def connect_iruna():
     if not url: return jsonify({"error": "No URL provided"}), 400
 
     def background_connect():
-        client.connect_and_start(url)
+        import time
+        if client.connect_and_start(url):
+            if args.minimal:
+                print("[*] Connected via minimal UI. Waiting for world to load to auto-start Zimov...")
+                # Wait until we are fully loaded in a map
+                while not state.current_map_hex:
+                    time.sleep(1)
+                # Short buffer to ensure environment is stabilized
+                time.sleep(2)
+                
+                print("[*] World loaded. Starting Auto-Zimov loop!")
+                from core.boss_module import auto_zimov_loop
+                # Start the loop in this thread
+                auto_zimov_loop(client.sock)
 
     threading.Thread(target=background_connect, daemon=True).start()
     return jsonify({"status": "Connecting..."})
