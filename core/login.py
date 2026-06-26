@@ -99,7 +99,7 @@ def _parse_char_id(sock: socket.socket) -> str:
     Pattern: ff030100000001 followed by 4 bytes (8 hex chars) of char ID.
     """
     try:
-        sock.settimeout(0.3)
+        sock.settimeout(5.0)
         extra = hex_recv(sock, label="ff03 + char info")
         hexed = binascii.hexlify(extra).decode()
         idx = hexed.find("ff030100000001")

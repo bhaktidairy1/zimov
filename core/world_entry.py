@@ -11,10 +11,10 @@ import time
 from core.packet_helpers import hex_recv, hex_send
 from core.game_state import state
 from core.packets import (
-    PKT_CHAR_SELECT, PKT_ENTER_WORLD, PKT_POST_MAP,
+    PKT_CHAR_SELECT, PKT_NEW_CHAR_SEL, PKT_ENTER_WORLD, PKT_POST_MAP,
     PKT_MOVEMENT_STEPS, PKT_MOVEMENT_READY,
-    PKT_PRESENCE_START, PKT_MAP_SYNC_BEGIN, PKT_BULK_HEADER,
-    PKT_MOTION_TRIGGER, PKT_VISUALS_SETUP, PKT_WORLD_TICKS,
+    PKT_PRESENCE_START, PKT_MAP_SYNC_BEGIN, PKT_MAGIC_BUNDLE, PKT_BULK_HEADER,
+    PKT_WORLD_TICKS,
     PRESENCE_ZEROS, build_map_data_packet, build_bulk_data_packet,
     build_world_ticks_packet,
     PKT_WARP_SYNC_START, PKT_WARP_SYNC_END,
@@ -111,14 +111,15 @@ def enter_world(sock, char_id_hex: str):
     # We will accumulate all received hex data to ensure we don't miss 0111 split across reads
     login_buffer = ""
 
-    # Step 4: Character Select
-    _send_and_log(sock, PKT_CHAR_SELECT, "Character Select")
+    # Step 4: Character Select (First step)
+    _send_and_log(sock, PKT_CHAR_SELECT, "Character Select 1")
+    _send_and_log(sock, PKT_NEW_CHAR_SEL, "Character Select 2")
     char_sel = hex_recv(sock, label="Character Info")
     if char_sel: login_buffer += binascii.hexlify(char_sel).decode()
 
-    # Step 5: Enter World — send opcode + char_id separately
-    _send_and_log(sock, PKT_ENTER_WORLD, "Enter World")
-    _send_and_log(sock, char_id_hex, "Character ID")
+    # Step 5: Enter World — new format
+    _send_and_log(sock, PKT_ENTER_WORLD, "Enter World Header")
+    _send_and_log(sock, char_id_hex + "0000", "Character ID")
     char_info_1 = hex_recv(sock, label="Character Info")
     if char_info_1: login_buffer += binascii.hexlify(char_info_1).decode()
 
@@ -128,13 +129,13 @@ def enter_world(sock, char_id_hex: str):
     char_info_2 = hex_recv(sock, label="Character Info")
     if char_info_2: login_buffer += binascii.hexlify(char_info_2).decode()
 
-    # Step 7: Movement Handshake (4 steps + ready)
+    # Step 7: Movement Handshake (now only 2 steps + ready)
     for step in PKT_MOVEMENT_STEPS:
         _send_and_log(sock, step, "Movement Step")
     pre_move_sync = hex_recv(sock, label="Pre-Movement Sync")
     if pre_move_sync: login_buffer += binascii.hexlify(pre_move_sync).decode()
 
-    _send_and_log(sock, PKT_MOVEMENT_READY, "Movement Step")
+    _send_and_log(sock, PKT_MOVEMENT_READY, "Movement Ready")
     move_sync = hex_recv(sock, label="Movement Sync")
     if move_sync: login_buffer += binascii.hexlify(move_sync).decode()
 
@@ -162,19 +163,26 @@ def enter_world(sock, char_id_hex: str):
     extra_data = hex_recv(sock, label="Extra State Data")
     _parse_spawn_coords(extra_data)
 
-    # Step 11: Bulk Action
-    _send_and_log(sock, PKT_BULK_HEADER, "Bulk Action")
-    bulk_data = build_bulk_data_packet(state.current_map_hex)
-    _send_and_log(sock, bulk_data, "Bulk Action Contd.")
+    # Step 11: Magic Bundle (Visuals + Sync Start + Motion Triggers)
+    for pkt in PKT_MAGIC_BUNDLE:
+        _send_and_log(sock, pkt, "Magic Bundle Pkt")
 
-    # Step 12: Trigger Motion
-    _send_and_log(sock, PKT_MOTION_TRIGGER, "Trigger Motion")
-    motion_ack = hex_recv(sock, label="Motion Ack")
+    # The server responds with Map Sync Ack and then b503 Map Sync
+    hex_recv(sock, label="Ack for Position")
+    extra_data = hex_recv(sock, label="Extra State Data (b503)")
+    _parse_spawn_coords(extra_data)
+
+    # Step 12: Map Entry
+    _send_and_log(sock, PKT_BULK_HEADER, "Bulk Header (3002)")
+    bulk_data = build_bulk_data_packet(state.current_map_hex)
+    _send_and_log(sock, bulk_data, "Bulk Data (20c9)")
+    
+    motion_ack = hex_recv(sock, label="Map Entry Ack")
     if motion_ack:
         _extract_0111_spawn(binascii.hexlify(motion_ack).decode())
 
-    # Step 13: Visuals + World Ticks
-    _send_and_log(sock, PKT_VISUALS_SETUP, "Visuals Setup")
+    # Step 13: World Ticks
+    _send_and_log(sock, "000411000003", "Tick Setup")
     _send_and_log(sock, PKT_WORLD_TICKS, "World Ticks Start")
     _send_and_log(sock, build_world_ticks_packet(), "World Ticks")
 
@@ -184,14 +192,17 @@ def enter_world(sock, char_id_hex: str):
 
     # Step 14: Summon Pet
     import re
-    # The pet structure in the character info packet is typically: 
-    # [UID (8 hex chars)] 0064 [Name Length (4 hex chars)] [Name]
-    pet_match = re.search(r"([0-9a-f]{8})006400[0-9a-f]{2}", login_buffer, re.IGNORECASE)
+    # The new pet structure is usually preceded by an `a102` opcode, but we can still look through the buffer.
+    # The buffer regex looks for: a102 followed by the 8-char UID.
+    pet_match = re.search(r"a102([0-9a-f]{8})0065000841", login_buffer, re.IGNORECASE)
+    if not pet_match:
+        # Fallback to the old regex
+        pet_match = re.search(r"([0-9a-f]{8})006400[0-9a-f]{2}", login_buffer, re.IGNORECASE)
+        
     if pet_match:
         state.pet_uid_hex = pet_match.group(1)
         print(f"[+] Found Pet! UID: {state.pet_uid_hex}")
-        _send_and_log(sock, PKT_SUMMON_PET, "Summon Pet Opcode")
-        _send_and_log(sock, state.pet_uid_hex, "Summon Pet UID")
+        _send_and_log(sock, PKT_SUMMON_PET + state.pet_uid_hex, "Summon Pet")
     else:
         print("[-] No pets found in login sequence.")
 

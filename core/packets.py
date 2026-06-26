@@ -30,15 +30,15 @@ OP_MAP_DATA      = 0x3003   # Map data (weather, BGM, final ack)
 # ════════════════════════════════════════════
 PKT_INIT           = "0002fff3"
 PKT_CHAR_SELECT    = "0002f032"
-PKT_ENTER_WORLD    = "00060001"
+PKT_NEW_CHAR_SEL   = "00020003"
+PKT_ENTER_WORLD    = "00080002"  # Followed by char_id_hex + 0000
 PKT_POST_MAP       = "000623f3"
-PKT_MOVEMENT_STEPS = ["00023300", "00023303", "00023300", "00023303"]
+PKT_MOVEMENT_STEPS = ["00023300", "00023303"]
 PKT_MOVEMENT_READY = "00026002"
 PKT_PRESENCE_START = "001bb300"
 PKT_MAP_SYNC_BEGIN = "0002013a"
+PKT_MAGIC_BUNDLE   = ["0003020700", "0002013a", "00023209", "0006011300000000", "00020160", "00028100", "00028110", "00028300", "00028200", "0003840400"]
 PKT_BULK_HEADER    = "000f3002"
-PKT_MOTION_TRIGGER = "0002016000028100000281100002830000028200"
-PKT_VISUALS_SETUP  = "0003840400"
 PKT_WORLD_TICKS    = "00025003"
 PKT_SUMMON_PET     = "0006a102"
 PKT_COORD_PREFIX   = "00060101"
@@ -85,27 +85,35 @@ def build_map_data_packet(map_hex: str, x: str, y: str) -> str:
     000e01100000<map_2byte>0000<x_2byte>0000<y_2byte>
     Length 000e = 14 bytes payload
     """
-    return f"000e01100000{map_hex}0000{x}0000{y}"
+    map_padded = map_hex.zfill(8)
+    x_padded = x.zfill(8)
+    y_padded = y.zfill(8)
+    return f"000e0110{map_padded}{x_padded}{y_padded}"
 
 
 def build_bulk_data_packet(map_hex: str) -> str:
     """Build bulk action data with current map reference."""
-    return f"1100000000000000000000{map_hex}00023209"
+    return f"1100000000000000000000{map_hex}000220c9"
 
 
 def build_warp_exit_packet(portal_id: str, current_map: str) -> str:
     """3002 EXIT packet for leaving current map."""
-    return f"000f300211000000{portal_id.zfill(2)}000000000000{current_map}"
+    map_padded = current_map.zfill(8)
+    return f"000f300211000000{portal_id.zfill(2)}00000000{map_padded}"
 
 
 def build_warp_position_packet(target_map: str, x: str, y: str) -> str:
     """110 POSITION packet for warp destination."""
-    return f"000e01100000{target_map}0000{x}0000{y}"
+    map_padded = target_map.zfill(8)
+    x_padded = x.zfill(8)
+    y_padded = y.zfill(8)
+    return f"000e0110{map_padded}{x_padded}{y_padded}"
 
 
 def build_warp_entry_packet(target_map: str) -> str:
     """3002 ENTRY packet for arriving at new map."""
-    return f"000f30021100000000000000000000{target_map}"
+    map_padded = target_map.zfill(8)
+    return f"000f3002110000000000000000{map_padded}"
 
 
 def build_world_ticks_packet() -> str:
