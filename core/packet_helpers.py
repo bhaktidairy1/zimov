@@ -18,6 +18,12 @@ _log_lines = 0
 _log_lock = threading.Lock()
 
 
+def get_current_log_filepath():
+    """Return the active packet log filepath, if any."""
+    with _log_lock:
+        return _log_filepath
+
+
 def start_packet_log(log_dir=None):
     """
     Start logging all packets to a timestamped file.

