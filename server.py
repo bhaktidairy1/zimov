@@ -246,8 +246,8 @@ def cleanup_and_exit():
         pass
         
     # --- Discord Webhook Upload ---
-    webhook_url = "https://discord.com/api/webhooks/1520498468655730788/z6GwrwKJbCWSFPoDn2V1hlskBygnrX-E6Ijw1szMmckieJiriKqNb6R8nV0fJ5TWv4po"
-    if log_filepath and os.path.exists(log_filepath):
+    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
+    if webhook_url and log_filepath and os.path.exists(log_filepath):
         print(f"[*] Uploading log to Discord: {os.path.basename(log_filepath)}...")
         try:
             import requests
@@ -262,6 +262,8 @@ def cleanup_and_exit():
                 print(f"[-] Discord upload failed with status: {response.status_code}")
         except Exception as e:
             print(f"[-] Discord upload error: {e}")
+    elif not webhook_url:
+        print("[!] DISCORD_WEBHOOK_URL not set in environment. Skipping log upload.")
 
     
     print("[!] Resources freed. Exiting program.")
@@ -291,8 +293,41 @@ if __name__ == "__main__":
     if port != base_port:
         print(f"[!] Port {base_port} is occupied. Using port {port} instead.")
         
+    # --- Foolproof Exit Handlers ---
+    import atexit
+    import signal
+    import sys
+
+    # Prevent cleanup_and_exit from running multiple times
+    _cleanup_done = False
+    def safe_cleanup(*args):
+        global _cleanup_done
+        if not _cleanup_done:
+            _cleanup_done = True
+            cleanup_and_exit()
+
+    atexit.register(safe_cleanup)
+    
+    # Catch termination signals (like Render shutting down the container)
+    try:
+        signal.signal(signal.SIGTERM, safe_cleanup)
+        signal.signal(signal.SIGINT, safe_cleanup)
+    except Exception:
+        pass # In case signals aren't supported on this thread/OS
+        
+    # Catch unhandled exceptions
+    def handle_unhandled_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+        print(f"[CRITICAL] Unhandled exception: {exc_value}")
+        safe_cleanup()
+        
+    sys.excepthook = handle_unhandled_exception
+
     try:
         app.run(host="0.0.0.0", port=port, debug=False)
-    except KeyboardInterrupt:
-        print("\n[!] KeyboardInterrupt detected (CTRL+C).")
-        cleanup_and_exit()
+    except Exception as e:
+        print(f"\n[CRITICAL] Server crashed: {e}")
+    finally:
+        safe_cleanup()
